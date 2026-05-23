@@ -19,7 +19,9 @@ import {
   Trash2,
   Server,
   Mic,
-  MicOff
+  MicOff,
+  X,
+  Camera
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DanceRoutine, DanceStep, YouTubeVideoInfo } from "./types";
@@ -286,6 +288,8 @@ export default function App() {
   // Camera & AI Dance Compilation State
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraPhotoBuffer, setCameraPhotoBuffer] = useState<string | null>(null);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [localCamStream, setLocalCamStream] = useState<MediaStream | null>(null);
   const [photoCount, setPhotoCount] = useState(0);
 
   // Pipeline compile progress states
@@ -478,18 +482,32 @@ export default function App() {
   const startWebcam = async () => {
     try {
       setCameraPhotoBuffer(null);
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
-      if (webcamVideoRef.current) {
-        webcamVideoRef.current.srcObject = stream;
-      }
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 640, height: 480 }, 
+        audio: false 
+      });
       setIsCameraActive(true);
+      setLocalCamStream(stream);
+      
+      // Delay to allow the `<video>` element to render in the DOM so that the ref becomes available
+      setTimeout(() => {
+        if (webcamVideoRef.current) {
+          webcamVideoRef.current.srcObject = stream;
+        }
+      }, 100);
     } catch (err) {
       console.error("Failed to access camera", err);
-      alert("Could not access your camera. Please ensure camera permissions are allowed in your browser settings!");
+      alert("Could not access your camera. Iframe sandboxes or browser policies may require you to grant video/camera permissions. You can also use our zero-dependency offline character presets! Choose one inside the setup modal.");
     }
   };
 
   const stopWebcam = () => {
+    // Stop tracks on the localCamStream state variable
+    if (localCamStream) {
+      localCamStream.getTracks().forEach(track => track.stop());
+      setLocalCamStream(null);
+    }
+    // Also stop any track on the ref directly as backup
     if (webcamVideoRef.current && webcamVideoRef.current.srcObject) {
       const stream = webcamVideoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => track.stop());
@@ -511,6 +529,114 @@ export default function App() {
       setCameraPhotoBuffer(dataUrl);
       setPhotoCount(prev => prev + 1);
       stopWebcam();
+    }
+  };
+
+  const generateLocalPresetCharacter = (styleName: "cyber" | "solar" | "metro") => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      // Draw stylized backdrop
+      if (styleName === "cyber") {
+        const grad = ctx.createRadialGradient(320, 240, 50, 320, 240, 400);
+        grad.addColorStop(0, "#121829");
+        grad.addColorStop(1, "#020617");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 640, 480);
+        
+        ctx.strokeStyle = "rgba(99, 102, 241, 0.12)";
+        ctx.lineWidth = 1;
+        for (let x = 0; x < 640; x += 40) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 480); ctx.stroke();
+        }
+        for (let y = 0; y < 480; y += 40) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(640, y); ctx.stroke();
+        }
+
+        // Draw Cyber Neon Stick Artist Silhouette
+        ctx.shadowColor = "#6366f1";
+        ctx.shadowBlur = 15;
+        ctx.strokeStyle = "#818cf8";
+        ctx.lineWidth = 5;
+        ctx.fillStyle = "#818cf8";
+
+        // head
+        ctx.beginPath(); ctx.arc(320, 110, 22, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // torso
+        ctx.beginPath(); ctx.moveTo(320, 132); ctx.lineTo(320, 260); ctx.stroke();
+        // arms doing cool dynamic stance
+        ctx.beginPath(); ctx.moveTo(320, 160); ctx.lineTo(240, 140); ctx.lineTo(190, 190); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(320, 160); ctx.lineTo(400, 190); ctx.lineTo(460, 160); ctx.stroke();
+        // legs
+        ctx.beginPath(); ctx.moveTo(320, 260); ctx.lineTo(260, 340); ctx.lineTo(240, 440); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(320, 260); ctx.lineTo(380, 330); ctx.lineTo(400, 440); ctx.stroke();
+
+      } else if (styleName === "solar") {
+        const grad = ctx.createLinearGradient(0, 0, 640, 480);
+        grad.addColorStop(0, "#451a03"); // warm dark brown
+        grad.addColorStop(1, "#171717"); // neutral 900
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 640, 480);
+
+        ctx.fillStyle = "rgba(249, 115, 22, 0.1)";
+        ctx.beginPath(); ctx.arc(320, 240, 130, 0, Math.PI * 2); ctx.fill();
+
+        ctx.shadowColor = "#f97316";
+        ctx.shadowBlur = 12;
+        ctx.strokeStyle = "#fb923c";
+        ctx.lineWidth = 5;
+        ctx.fillStyle = "#ffedd5";
+
+        // head
+        ctx.beginPath(); ctx.arc(320, 120, 22, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // torso
+        ctx.beginPath(); ctx.moveTo(320, 142); ctx.lineTo(320, 270); ctx.stroke();
+        // athletic stance
+        ctx.beginPath(); ctx.moveTo(320, 170); ctx.lineTo(250, 100); ctx.lineTo(210, 50); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(320, 170); ctx.lineTo(390, 190); ctx.lineTo(440, 150); ctx.stroke();
+        // legs
+        ctx.beginPath(); ctx.moveTo(320, 270); ctx.lineTo(270, 350); ctx.lineTo(300, 440); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(320, 270); ctx.lineTo(370, 350); ctx.lineTo(410, 430); ctx.stroke();
+
+      } else {
+        // metropolitan breakdancer
+        const grad = ctx.createLinearGradient(0, 480, 640, 0);
+        grad.addColorStop(0, "#062f4f"); // deep midnight blue
+        grad.addColorStop(1, "#030712");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 640, 480);
+
+        ctx.fillStyle = "rgba(6, 182, 212, 0.08)";
+        ctx.beginPath(); ctx.arc(280, 200, 100, 0, Math.PI * 2); ctx.fill();
+
+        ctx.shadowColor = "#06b6d4";
+        ctx.shadowBlur = 15;
+        ctx.strokeStyle = "#22d3ee";
+        ctx.lineWidth = 5;
+        ctx.fillStyle = "#e0f7fa";
+
+        // head
+        ctx.beginPath(); ctx.arc(320, 135, 23, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // torso
+        ctx.beginPath(); ctx.moveTo(320, 158); ctx.lineTo(320, 285); ctx.stroke();
+        // arms
+        ctx.beginPath(); ctx.moveTo(320, 175); ctx.lineTo(240, 200); ctx.lineTo(190, 260); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(320, 175); ctx.lineTo(400, 150); ctx.lineTo(450, 100); ctx.stroke();
+        // legs
+        ctx.beginPath(); ctx.moveTo(320, 285); ctx.lineTo(270, 360); ctx.lineTo(250, 440); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(320, 285); ctx.lineTo(380, 345); ctx.lineTo(360, 440); ctx.stroke();
+      }
+
+      const dataUrl = canvas.toDataURL("image/jpeg");
+      setCameraPhotoBuffer(dataUrl);
+      setPhotoCount(prev => prev + 1);
+      stopWebcam();
+    } catch (presetErr) {
+      console.error("Local preset generator error:", presetErr);
     }
   };
 
@@ -1196,28 +1322,69 @@ export default function App() {
               </div>
 
               {/* Informative Camera Snapper Anchor card */}
-              <div className="bg-indigo-950/15 border border-indigo-500/20 p-4 rounded-xl space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping" />
-                  <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider block">
-                    Real-time Face-Body Overlay
-                  </span>
+              <div className="bg-indigo-950/10 border border-indigo-500/15 p-4 rounded-xl space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                    <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider block">
+                      Selfie & AI Dancer Overlay
+                    </span>
+                  </div>
+                  {cameraPhotoBuffer && (
+                    <span className="text-[9px] font-mono text-emerald-400 font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/30 uppercase tracking-widest">
+                      ACTIVE
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-slate-305 text-slate-300 leading-relaxed font-sans">
-                  Use the Web Camera console on the Stage below to snap a reference selfie.
+                
+                <p className="text-xs text-slate-300 leading-relaxed font-sans">
+                  Snap a selfie or choose one of our futuristic vector dance models to synthesize personalized overlays.
                 </p>
+
                 {cameraPhotoBuffer ? (
-                  <div className="flex gap-3 items-center bg-[#020617] p-2 rounded-lg border border-slate-805">
-                    <img src={cameraPhotoBuffer} className="w-9 h-9 rounded object-cover border border-slate-800" alt="Selfie" referrerPolicy="no-referrer" />
-                    <div>
-                      <span className="text-[9px] font-mono text-emerald-400 block uppercase font-bold">Selfie Buffered</span>
-                      <span className="text-[10px] text-slate-500 font-mono">Ready to render AI custom projections</span>
+                  <div className="space-y-3">
+                    <div className="flex gap-3 items-center bg-slate-950/60 p-2 rounded-lg border border-slate-900">
+                      <img src={cameraPhotoBuffer} className="w-10 h-10 rounded-lg object-cover border border-slate-800" alt="Selfie" referrerPolicy="no-referrer" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[9px] font-mono text-cyan-400 block uppercase font-bold">Image Buffered</span>
+                        <span className="text-[10px] text-slate-500 font-mono block truncate">Ready to compile keypoint sequences</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsCameraModalOpen(true)}
+                        className="text-[10px] font-mono text-indigo-455 text-indigo-400 hover:text-white px-2 py-1 bg-slate-900 rounded border border-slate-850 hover:border-indigo-500 transition-colors cursor-pointer"
+                      >
+                        Change
+                      </button>
                     </div>
+                    
+                    <button
+                      type="button"
+                      onClick={compileChoreographyWithPhoto}
+                      disabled={isCompilingAIPoses}
+                      className="w-full py-2 bg-gradient-to-tr from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 disabled:opacity-40 text-white text-[11.5px] font-mono font-bold rounded-lg cursor-pointer transition-all shadow-md flex items-center justify-center gap-1.5"
+                    >
+                      {isCompilingAIPoses ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Generating AI Choreography Loop...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>⚡ Generate AI Video Flow</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 ) : (
-                  <div className="text-[10.5px] text-amber-400 font-mono bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 leading-snug font-sans">
-                    ⚠️ Camera snapshot not taken. Engage camera inside the  "Webcam & AI Motion" card below!
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsCameraModalOpen(true)}
+                    className="w-full py-2.5 bg-gradient-to-tr from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-mono text-[11.5px] font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-indigo-554/15 active:scale-[0.98] transition-all"
+                  >
+                    <Camera className="w-4 h-4 text-indigo-200" />
+                    <span>Setup Character Model / Selfie</span>
+                  </button>
                 )}
               </div>
 
@@ -1575,177 +1742,45 @@ export default function App() {
 
               </div>
 
-              {/* Real-time Webcam Motion Capture & AI Choreography compiler dashboard */}
-              {wizardStep >= 2 && (
-                <div className="w-full mt-2 p-4 bg-slate-950/80 rounded-2xl border border-slate-800/80 shadow-md text-left transition-all">
-                <div className="flex items-center justify-between mb-3 border-b border-slate-800/60 pb-2">
+              {/* Sleek, simple visual compilation banner if ready */}
+              {wizardStep >= 2 && compiledPhotoResult && (
+                <div className="w-full mt-4 p-3.5 bg-indigo-950/15 backdrop-blur border border-indigo-500/10 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+                  <div className="flex items-center gap-3">
+                    {cameraPhotoBuffer && (
+                      <img
+                        src={cameraPhotoBuffer}
+                        className="w-10 h-10 rounded-lg object-cover border border-indigo-554 border-indigo-500/20 shrink-0"
+                        alt="Model Thumbnail"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    <div>
+                      <span className="text-[10px] font-mono text-indigo-400 font-bold block uppercase tracking-wider">🤖 AI CHARACTER PLACED</span>
+                      <p className="text-xs text-slate-300">Stick frame overlays compiled smoothly onto your character portrait.</p>
+                    </div>
+                  </div>
+                  
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${isCompilingAIPoses ? "bg-rose-500 animate-pulse" : isCameraActive ? "bg-emerald-500 animate-ping" : "bg-indigo-500"}`} />
-                    <span className="text-[10.5px] font-mono tracking-wider text-slate-300 font-bold uppercase">
-                      📸 WEBCAM AI MOTION CAPTURE & CHOREOGRAPHER
-                    </span>
-                  </div>
-                  {compiledPhotoResult && (
-                    <span className="text-[9px] font-mono bg-emerald-950 border border-emerald-800/40 px-2 py-0.5 rounded text-emerald-300">
-                      ⚡ COMPILATION READY
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
-                  {/* Camera Viewer / Snapshot Panel */}
-                  <div className="md:col-span-5 flex flex-col justify-center bg-[#020617]/40 rounded-xl border border-slate-900 overflow-hidden relative min-h-[160px]">
-                    {isCameraActive ? (
-                      <div className="relative w-full h-[160px] bg-black">
-                        <video
-                          ref={webcamVideoRef}
-                          autoPlay
-                          playsInline
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 px-4 shadow-xl">
-                          <button
-                            type="button"
-                            onClick={captureWebcamSnapshot}
-                            className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/20 text-white rounded text-xs font-mono font-bold cursor-pointer transition-colors shadow-lg shadow-indigo-550/30"
-                          >
-                            📸 Snap Photo
-                          </button>
-                          <button
-                            type="button"
-                            onClick={stopWebcam}
-                            className="px-3 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700/30 text-slate-300 rounded text-xs font-mono cursor-pointer transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : cameraPhotoBuffer ? (
-                      <div className="relative w-full h-[160px] bg-slate-950">
-                        <img
-                          src={cameraPhotoBuffer}
-                          alt="Captured snap"
-                          className="w-full h-full object-contain"
-                        />
-                        <div className="absolute top-2 right-2 bg-indigo-950/90 border border-indigo-800/40 text-[9px] font-mono text-indigo-300 px-1.5 py-0.5 rounded">
-                          SNAP #{photoCount}
-                        </div>
-                        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 px-2">
-                          <button
-                            type="button"
-                            onClick={startWebcam}
-                            className="px-2.5 py-1 bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded text-[10px] font-mono cursor-pointer transition-colors"
-                          >
-                            🔄 Retake
-                          </button>
-                          <button
-                            type="button"
-                            onClick={compileChoreographyWithPhoto}
-                            disabled={isCompilingAIPoses}
-                            className="px-3 py-1 bg-gradient-to-tr from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-[11px] font-bold font-mono rounded cursor-pointer disabled:opacity-55 active:scale-95 transition-all shadow-md shadow-indigo-600/30 flex items-center gap-1.5"
-                          >
-                            <span>⚡ Generate AI Video</span>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-4 text-center flex flex-col items-center justify-center h-full min-h-[160px]">
-                        <p className="text-[10px] text-slate-400 leading-normal max-w-sm">
-                          To simulate yourself in every dance position and compile transitions with FFmpeg, snap a photo below.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={startWebcam}
-                          className="mt-3 flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-505 hover:bg-indigo-500 text-white rounded-lg text-xs font-mono font-bold transition-all cursor-pointer shadow-sm shadow-indigo-500/10 active:scale-95 text-center"
-                        >
-                          📷 Engage Web Camera
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Processing Progress Indicator & Poses Side-Gallery */}
-                  <div className="md:col-span-7 flex flex-col justify-between bg-slate-950/20 p-3 rounded-xl border border-slate-900 min-h-[160px]">
-                    {isCompilingAIPoses ? (
-                      <div className="flex flex-col items-center justify-center h-full py-4 text-center">
-                        <div className="relative mb-3.5">
-                          <div className="w-10 h-10 border-2 border-slate-900 rounded-full" />
-                          <div className="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0" />
-                        </div>
-                        <span className="text-[10.5px] font-mono text-indigo-300 font-semibold animate-pulse">
-                          {compilationProgressMessage}
-                        </span>
-                        <p className="text-[9px] text-slate-500 mt-1">
-                          Generating sequential transitions matching each step's exact BPM length.
-                        </p>
-                      </div>
-                    ) : compiledPhotoResult ? (
-                      <div className="flex flex-col h-full justify-between gap-3">
-                        <div className="space-y-1">
-                          <span className="text-[9.5px] font-mono text-slate-400 font-bold uppercase tracking-wider block">
-                            🤖 Generated Step Projections Flow
-                          </span>
-                          <div className="flex gap-2 overflow-x-auto pb-1 max-w-[340px] pr-1 scrollbar-thin scrollbar-thumb-slate-800">
-                            {compiledPhotoResult.stepSvgs.map((svgUrl, idx) => (
-                              <div
-                                key={idx}
-                                onClick={() => {
-                                  setActiveStepIndex(idx);
-                                  setIsPlaying(false);
-                                }}
-                                className={`flex-shrink-0 w-14 h-16 border rounded bg-slate-950/90 overflow-hidden cursor-pointer transition-all ${
-                                  idx === activeStepIndex
-                                    ? "border-indigo-505 border-indigo-500 shadow-md shadow-indigo-500/20 scale-105"
-                                    : "border-slate-800 hover:border-slate-700"
-                                }`}
-                              >
-                                <img
-                                  src={svgUrl}
-                                  alt={`Pose Step ${idx + 1}`}
-                                  className="w-full h-full object-contain pointer-events-none"
-                                  referrerPolicy="no-referrer"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-2">
-                          <div className="text-left">
-                            <p className="text-[10px] text-slate-300 leading-normal font-sans font-medium flex items-center gap-1">
-                              <span>🎉 Video successfully compiled!</span>
-                            </p>
-                            <p className="text-[8.5px] text-slate-500 font-mono">
-                              {compiledPhotoResult.compiled 
-                                ? "FFmpeg stitched 1-to-next exact-beat segments." 
-                                : "Fallback active: Playing fluid client-side step animations."}
-                            </p>
-                          </div>
-
-                          {compiledPhotoResult.videoUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setShowCompiledCinemaOverlay(true)}
-                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-mono font-bold rounded cursor-pointer transition-colors shadow-md shadow-emerald-555/15 flex items-center gap-1 shrink-0"
-                            >
-                              🎬 Play Final Video
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-center h-full p-2">
-                        <span className="text-[10px] font-mono text-slate-505 text-slate-500 block mb-1">
-                          PROJECTIONS SCHEMATIC STANDBY
-                        </span>
-                        <p className="text-[9px] text-slate-600 leading-normal max-w-xs">
-                          Snap photo to activate sequential stick figure motion projection, combining your picture with choreography skeleton keypoints.
-                        </p>
-                      </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCameraModalOpen(true)}
+                      className="px-3 py-1.5 bg-indigo-950/60 hover:bg-slate-900 text-indigo-300 font-mono text-[10px] rounded-lg border border-indigo-500/20 transition-all cursor-pointer"
+                    >
+                      🔄 Re-Setup
+                    </button>
+                    {compiledPhotoResult.videoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCompiledCinemaOverlay(true);
+                        }}
+                        className="px-3.5 py-1.5 bg-gradient-to-tr from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-455 text-white text-[10.5px] font-mono font-bold rounded-lg cursor-pointer transition-all shadow shadow-indigo-500/20 flex items-center gap-1 shrink-0"
+                      >
+                        🎬 View Fluid Cinema
+                      </button>
                     )}
                   </div>
                 </div>
-              </div>
               )}
 
             </div>
@@ -1994,6 +2029,247 @@ export default function App() {
       <footer className="mt-auto border-t border-slate-850 bg-slate-950 p-4 text-center text-slate-500 text-xs">
         <p>YouTube Dance Moves Generator &middot; Fully Custom Interactive Choreography Dashboard</p>
       </footer>
+
+      {/* Studio Character & Selfie Modal */}
+      <AnimatePresence>
+        {isCameraModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="relative w-full max-w-2xl bg-[#090d1a] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col text-left"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-slate-800/60 bg-slate-950/30">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                    <Camera className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-100 font-mono uppercase tracking-wide">
+                      Studio Character Camera
+                    </h3>
+                    <p className="text-[11px] text-slate-400 font-sans">
+                      Setup your custom dancer image or select a prebuilt neon avatar.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    stopWebcam();
+                    setIsCameraModalOpen(false);
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-6">
+                
+                {/* 1. Loader screen inside the modal */}
+                {isCompilingAIPoses ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
+                    <div className="relative">
+                      <div className="w-14 h-14 border-4 border-slate-900 rounded-full" />
+                      <div className="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-mono text-indigo-300 font-semibold animate-pulse uppercase tracking-wider block">
+                        {compilationProgressMessage || "Compiling Posture Overlays..."}
+                      </span>
+                      <p className="text-[10px] text-slate-500 max-w-sm mx-auto mt-1 leading-normal">
+                        Wait a couple seconds while Gemini-2.5 scales anatomical structures onto your selected character frame.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    {/* Left Column: Visual Capture / Snapshot Preview */}
+                    <div className="flex flex-col justify-center bg-slate-950 rounded-xl border border-slate-850 overflow-hidden relative aspect-video h-[210px] md:h-auto">
+                      {isCameraActive ? (
+                        <div className="relative w-full h-full bg-black flex items-center justify-center">
+                          <video
+                            ref={webcamVideoRef}
+                            autoPlay
+                            playsInline
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 px-4 shadow-xl">
+                            <button
+                              type="button"
+                              onClick={captureWebcamSnapshot}
+                              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/20 text-white rounded-lg text-xs font-mono font-bold cursor-pointer transition-all shadow shadow-indigo-600/30 flex items-center gap-1.5 active:scale-95"
+                            >
+                              <span>📸 Snap Photo</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={stopWebcam}
+                              className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg text-xs font-mono cursor-pointer transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : cameraPhotoBuffer ? (
+                        <div className="relative w-full h-full bg-slate-950 flex items-center justify-center">
+                          <img
+                            src={cameraPhotoBuffer}
+                            alt="Captured snap"
+                            className="w-full h-full object-contain"
+                          />
+                          <div className="absolute top-2.5 right-2.5 bg-indigo-950/90 border border-indigo-800/40 text-[9px] font-mono text-indigo-300 px-2 py-0.5 rounded-md shadow">
+                            SNAP COUNT: #{photoCount}
+                          </div>
+                          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 px-2">
+                            <button
+                              type="button"
+                              onClick={startWebcam}
+                              className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg text-xs font-mono cursor-pointer transition-all"
+                            >
+                              🔄 Retake Photo
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-6 text-center flex flex-col items-center justify-center h-full">
+                          <div className="w-12 h-12 rounded-full bg-indigo-950/60 border border-indigo-500/10 flex items-center justify-center text-slate-500 mb-2.5">
+                            <Camera className="w-5 h-5 text-indigo-400" />
+                          </div>
+                          <p className="text-[10.5px] text-slate-400 leading-normal max-w-[240px] mx-auto">
+                            Snap a camera portrait. Permissions required. If on an iframe preview, try Presets!
+                          </p>
+                          <button
+                            type="button"
+                            onClick={startWebcam}
+                            className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shadow-md shadow-indigo-600/10 active:scale-95"
+                          >
+                            📷 Turn On Camera
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Column: Character presets & instant fallbacks */}
+                    <div className="flex flex-col justify-between space-y-4">
+                      <div>
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400 block mb-2">
+                          ⚡ Instant Vector Presets (CORS-free)
+                        </span>
+                        <p className="text-xs text-slate-400 leading-normal mb-3">
+                          No camera? No problem! Instantly load a stunning high-fidelity neon-lit silhouette character to project your dance frames:
+                        </p>
+                        
+                        <div className="space-y-2">
+                          <button
+                            type="button"
+                            onClick={() => generateLocalPresetCharacter("cyber")}
+                            className="w-full p-2.5 rounded-xl border border-slate-800 hover:border-indigo-500/40 bg-slate-950/40 hover:bg-indigo-950/10 text-left flex items-center justify-between transition-all cursor-pointer group animate-fade-in"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-4 h-4 rounded bg-indigo-550 bg-indigo-500/20 border border-indigo-554 border-indigo-500/30 flex items-center justify-center text-[8.5px] font-bold text-indigo-400">C</div>
+                              <div>
+                                <span className="text-xs font-bold text-slate-200 group-hover:text-indigo-300 block">Neon Cyber Dancer</span>
+                                <span className="text-[9.5px] text-slate-500 block">Deep indigo matrix grids with ultraviolet outline</span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] text-indigo-405 text-indigo-400 font-mono group-hover:underline">Load</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => generateLocalPresetCharacter("solar")}
+                            className="w-full p-2.5 rounded-xl border border-slate-800 hover:border-amber-500/40 bg-slate-950/40 hover:bg-amber-950/10 text-left flex items-center justify-between transition-all cursor-pointer group"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-4 h-4 rounded bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-[8.5px] font-bold text-amber-400">S</div>
+                              <div>
+                                <span className="text-xs font-bold text-slate-200 group-hover:text-amber-300 block">Solar Orbit Artist</span>
+                                <span className="text-[9.5px] text-slate-500 block">Terracotta sun background with golden athlete outline</span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] text-amber-405 text-amber-400 font-mono group-hover:underline">Load</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => generateLocalPresetCharacter("metro")}
+                            className="w-full p-2.5 rounded-xl border border-slate-800 hover:border-cyan-500/40 bg-slate-950/40 hover:bg-cyan-950/10 text-left flex items-center justify-between transition-all cursor-pointer group"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-4 h-4 rounded bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-[8.5px] font-bold text-cyan-400">M</div>
+                              <div>
+                                <span className="text-xs font-bold text-slate-200 group-hover:text-cyan-300 block">Teal Metro Breaker</span>
+                                <span className="text-[9.5px] text-slate-500 block">Dark midnight blue backdrop with cyan/lime detail</span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] text-cyan-405 text-cyan-400 font-mono group-hover:underline">Load</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {cameraPhotoBuffer && (
+                        <div className="p-3 bg-emerald-950/20 border border-emerald-800/20 rounded-xl flex items-center gap-2 text-emerald-300 text-[11px]">
+                          <CheckCircle className="w-4 h-4 shrink-0 text-emerald-400" />
+                          <span>Character image buffered! Click generate below to compile keypoints.</span>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                )}
+
+              </div>
+
+              {/* Footer */}
+              {!isCompilingAIPoses && (
+                <div className="flex items-center justify-between p-5 border-t border-slate-800/80 bg-slate-950/30">
+                  <span className="text-[10px] font-mono text-slate-500 leading-none">
+                    Status: {cameraPhotoBuffer ? "Ready to sync" : "Awaiting selection"}
+                  </span>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        stopWebcam();
+                        setIsCameraModalOpen(false);
+                      }}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs font-mono font-bold rounded-xl transition-all cursor-pointer"
+                    >
+                      Close Setup
+                    </button>
+                    
+                    {cameraPhotoBuffer && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          // Compile, and automatically close when done!
+                          await compileChoreographyWithPhoto();
+                          setIsCameraModalOpen(false);
+                        }}
+                        className="px-5 py-2 bg-gradient-to-tr from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-mono font-bold rounded-xl transition-all shadow-md shadow-indigo-650/20 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>⚡ Generate AI Video</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
