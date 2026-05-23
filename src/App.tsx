@@ -412,9 +412,9 @@ export default function App() {
     }
   };
 
-  // Sync synth loop with playback during Step 6
+  // Sync synth loop with playback during Step 3 (Perform & Play)
   useEffect(() => {
-    if (isPlaying && wizardStep === 6) {
+    if (isPlaying && wizardStep === 3) {
       startSynthLoop(danceRoutine.tempoBpm || 100);
     } else {
       stopSynthLoop();
@@ -799,6 +799,22 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+      {/* Dynamic Action Floating status toast */}
+      <AnimatePresence>
+        {saveStatus && (
+          <motion.div
+            key="save-status-toast"
+            initial={{ opacity: 0, y: -20, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -20, x: "-50%" }}
+            className="fixed top-4 left-1/2 z-50 bg-indigo-950/95 border border-indigo-500/80 text-indigo-200 px-4 py-2 rounded-xl shadow-xl shadow-indigo-950/80 text-xs font-mono flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+            <span>{saveStatus}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Visual background ambient stage lights */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-12 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -888,31 +904,28 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-2 max-w-full overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            {[1, 2, 3, 4, 5, 6].map((st) => {
+            {[1, 2, 3].map((st) => {
               const isActive = wizardStep === st;
               const isPast = wizardStep > st;
               return (
                 <button
                   key={st}
                   onClick={() => setWizardStep(st)}
-                  className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl border text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
                     isActive 
-                      ? "bg-indigo-600 border-indigo-400 text-white shadow-md" 
+                      ? "bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-600/10" 
                       : isPast 
                       ? "bg-emerald-950 border-emerald-800 text-emerald-400" 
                       : "bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300"
                   }`}
                 >
-                  <span className={`w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center ${isActive ? 'bg-white text-indigo-605 text-indigo-600' : isPast ? 'bg-emerald-400 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+                  <span className={`w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center ${isActive ? "bg-white text-indigo-600" : isPast ? "bg-emerald-400 text-slate-950" : "bg-slate-800 text-slate-400"}`}>
                     {st}
                   </span>
                   <span>
-                    {st === 1 && "Vibe/Song"}
-                    {st === 2 && "Cutter Clip"}
-                    {st === 3 && "Pose Skeleton"}
-                    {st === 4 && "Consistency Pose"}
-                    {st === 5 && "Beat Video"}
-                    {st === 6 && "Live Arena"}
+                    {st === 1 && "1. Choose Track & Segment"}
+                    {st === 2 && "2. Pose & Character Setup"}
+                    {st === 3 && "3. Perform & Practice"}
                   </span>
                 </button>
               );
@@ -1155,170 +1168,170 @@ export default function App() {
           )}
 
           {wizardStep === 2 && (
-            <div className="flex-1 bg-slate-950/40 border border-slate-800 rounded-xl p-5 space-y-4 text-left">
-              <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider block">Step 2: Choose Song Window</span>
-              <h3 className="text-sm font-bold text-slate-200">Isolate Segment Cutter</h3>
-              <p className="text-xs text-slate-500 leading-normal">
-                Select the preloaded 10-second choreography window from your track template below to focus the template keyframes.
+            <div className="flex-1 bg-[#0b1329]/45 border border-slate-850 p-5 rounded-2xl space-y-4 text-left font-sans">
+              <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider block">Step 2: Pose & Character Setup</span>
+              <h3 className="text-sm font-bold text-slate-200">Joint Anatomical Landmarks</h3>
+              <p className="text-xs text-slate-350 text-slate-400 leading-normal">
+                Click any keyframe below to view or modify its joint coordinates on the digital playback stage.
               </p>
               
-              <div className="space-y-3 pt-2">
-                {videoClips.map((clip) => {
-                  const isSelected = activeClipId === clip.id;
-                  return (
-                    <div 
-                      key={clip.id}
-                      onClick={() => setActiveClipId(clip.id)}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                        isSelected 
-                          ? "bg-indigo-600/15 border-indigo-500 text-white" 
-                          : "bg-slate-900/40 border-slate-800 hover:bg-slate-900/60"
-                      }`}
-                    >
-                      <div className="flex justify-between items-center text-[10.5px] font-mono">
-                        <span className="font-bold text-indigo-300">{clip.id.toUpperCase()}</span>
-                        <span className="text-slate-500">{clip.startSec}s - {clip.endSec}s</span>
-                      </div>
-                      <h4 className="text-xs font-semibold text-slate-200 mt-1">{clip.label}</h4>
+              <div className="space-y-1.5 max-h-[220px] overflow-y-auto custom-scrollbar font-mono">
+                {danceRoutine.steps.map((st, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setActiveStepIndex(idx)}
+                    className={`p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${
+                      idx === activeStepIndex 
+                        ? "bg-indigo-500/10 border-indigo-500/35 text-white shadow" 
+                        : "bg-slate-950/20 border-slate-900 text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${idx === activeStepIndex ? "bg-indigo-600 text-white" : "bg-slate-900 text-slate-500"}`}>{idx + 1}</span>
+                      <span className="text-xs font-bold block truncate max-w-[140px] font-sans">{st.name}</span>
                     </div>
-                  );
-                })}
+                    <span className="text-[10px] font-mono text-slate-505 text-slate-500">Beats: {st.beats}</span>
+                  </div>
+                ))}
               </div>
 
-              <div className="pt-2">
+              {/* Informative Camera Snapper Anchor card */}
+              <div className="bg-indigo-950/15 border border-indigo-500/20 p-4 rounded-xl space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping" />
+                  <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider block">
+                    Real-time Face-Body Overlay
+                  </span>
+                </div>
+                <p className="text-xs text-slate-305 text-slate-300 leading-relaxed font-sans">
+                  Use the Web Camera console on the Stage below to snap a reference selfie.
+                </p>
+                {cameraPhotoBuffer ? (
+                  <div className="flex gap-3 items-center bg-[#020617] p-2 rounded-lg border border-slate-805">
+                    <img src={cameraPhotoBuffer} className="w-9 h-9 rounded object-cover border border-slate-800" alt="Selfie" referrerPolicy="no-referrer" />
+                    <div>
+                      <span className="text-[9px] font-mono text-emerald-400 block uppercase font-bold">Selfie Buffered</span>
+                      <span className="text-[10px] text-slate-500 font-mono">Ready to render AI custom projections</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[10.5px] text-amber-400 font-mono bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 leading-snug font-sans">
+                    ⚠️ Camera snapshot not taken. Engage camera inside the  "Webcam & AI Motion" card below!
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-slate-850">
                 <button
+                  type="button"
                   onClick={() => setWizardStep(3)}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold rounded-lg flex items-center justify-center gap-1 cursor-pointer shadow"
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-505 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-500 text-white font-mono text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow shadow shadow-emerald-950/15"
                 >
-                  <span>Build Skeletal Waypoints &rarr;</span>
+                  <span>Build Practice Synthesizers (Step 3)</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWizardStep(1)}
+                  className="w-full py-1.5 bg-transparent hover:bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 font-mono text-[10px] rounded-lg cursor-pointer"
+                >
+                  &larr; Return to Songs Catalog
                 </button>
               </div>
             </div>
           )}
 
           {wizardStep === 3 && (
-            <div className="flex-1 bg-slate-950/40 border border-slate-800 rounded-xl p-5 space-y-4 text-left">
-              <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider block">Step 3: Skeleton Control Node</span>
-              <h3 className="text-sm font-bold text-slate-200">Choreography Positions</h3>
-              <p className="text-xs text-slate-500 leading-normal font-sans">
-                Click any keyframe node below to isolate and view its active joint coordinates on the simulator stage.
+            <div className="flex-1 bg-[#0b1329]/40 border border-slate-850 p-5 rounded-2xl space-y-4 text-left font-sans">
+              <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider block">Step 3: Perform & Play</span>
+              <h3 className="text-sm font-bold text-slate-200">Interactive Synthesizer</h3>
+              <p className="text-xs text-slate-400 leading-normal">
+                Initialize client-side oscillator loops with synchronized percussion to practice transitions live with precise BPM tempos!
               </p>
               
-              <div className="space-y-2 mt-3 overflow-y-auto max-h-[280px] custom-scrollbar">
-                {danceRoutine.steps.map((st, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => setActiveStepIndex(idx)}
-                    className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                      idx === activeStepIndex ? "bg-indigo-500/10 border-indigo-500/30 text-white shadow" : "bg-slate-950/20 border-slate-900 text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${idx === activeStepIndex ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-500'}`}>{idx + 1}</span>
-                      <span className="text-xs font-bold block">{st.name}</span>
-                    </div>
-                    <span className="text-[10px] font-mono">Beats: {st.beats}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-2">
-                <button
-                  onClick={() => setWizardStep(4)}
-                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold rounded-lg flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  <span>Snap Posing Space (Step 4) &rarr;</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {wizardStep === 4 && (
-            <div className="flex-1 bg-slate-950/40 border border-slate-800 rounded-xl p-5 space-y-4 text-left">
-              <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider block">Step 4: Camera Source Capture</span>
-              <h3 className="text-sm font-bold text-slate-200">Source Photo Snapper</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Take a rapid selfie snap using your web camera, or load our gorgeous independent dancer profile preloaded character frame.
-              </p>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={startWebcam}
-                  className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-[10.5px] font-bold rounded-lg cursor-pointer"
-                >
-                  📷 Start Camera
-                </button>
-                <button
-                  onClick={() => setCameraPhotoBuffer("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop")}
-                  className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono text-[10.5px] rounded-lg cursor-pointer"
-                >
-                  Avatar Template
-                </button>
-              </div>
-
-              {cameraPhotoBuffer && (
-                <div className="bg-[#020512] p-2.5 rounded-xl border border-slate-850 text-center relative max-w-[150px] mx-auto overflow-hidden">
-                  <img src={cameraPhotoBuffer} alt="Initial selfie snap" className="w-full h-24 object-contain" referrerPolicy="no-referrer" />
-                  <span className="text-[8px] font-mono bg-indigo-950 px-1 py-0.5 rounded text-indigo-300 mt-1 block">STARTING REFERENCE</span>
+              <div className="bg-[#020617] p-3 rounded-lg border border-slate-850 font-mono text-[10.5px] space-y-2 text-indigo-300">
+                <div className="flex justify-between border-b border-slate-850/60 pb-1">
+                  <span>Selected Song Track:</span>
+                  <span className="text-slate-100 font-bold truncate max-w-[130px]">{danceRoutine.songTitle}</span>
                 </div>
-              )}
-            </div>
-          )}
-
-          {wizardStep === 5 && (
-            <div className="flex-1 bg-slate-950/40 border border-slate-800 rounded-xl p-5 space-y-4 text-left">
-              <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider block">Step 5: Tempos Sync Details</span>
-              <h3 className="text-sm font-bold text-slate-200 font-mono">Rhythmic Speeds</h3>
-              <p className="text-xs text-slate-500 leading-normal">
-                Verify speed duration calculations calculated exactly base on tempo rhythms.
-              </p>
-              
-              <div className="bg-[#020617] p-3 rounded-lg border border-slate-900 font-mono text-[10px] space-y-2 text-indigo-305">
-                <div className="flex justify-between">
+                <div className="flex justify-between border-b border-slate-850/60 pb-1">
                   <span>Standard Tempo:</span>
-                  <span>{danceRoutine.tempoBpm} BPM</span>
+                  <span className="text-emerald-400 font-bold">{danceRoutine.tempoBpm || 100} BPM</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-850/60 pb-1">
+                  <span>Playback Speeds:</span>
+                  <span className="text-cyan-400 font-semibold">{playSpeedMs === 1800 ? "0.5x (Slow)" : playSpeedMs === 600 ? "2.0x (Fast)" : "1.0x (Standard)"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Computed Interval delay:</span>
-                  <span>{(60 / (danceRoutine.tempoBpm || 100)).toFixed(2)} seconds</span>
+                  <span>Calibrated Delay:</span>
+                  <span className="text-slate-100 font-mono">{(60 / (danceRoutine.tempoBpm || 100)).toFixed(2)} seconds/beat</span>
                 </div>
               </div>
-              
-              <button
-                onClick={() => setWizardStep(6)}
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold rounded-lg flex items-center justify-center gap-1"
-              >
-                <span>Live Concert Arena &rarr;</span>
-              </button>
-            </div>
-          )}
 
-          {wizardStep === 6 && (
-            <div className="flex-1 bg-slate-950/40 border border-slate-800 rounded-xl p-5 space-y-4 text-left">
-              <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider block">Step 6: Live Arena Concert</span>
-              <h3 className="text-sm font-bold text-slate-200">Sequencer Dashboard</h3>
-              <p className="text-xs text-slate-500 leading-normal">
-                Playing custom high-fidelity synthesizers live alongside generated pose loops in complete synchronization.
-              </p>
-
-              <div className="space-y-2 pt-2">
+              {/* Sound generation controls */}
+              <div className="space-y-3 pt-1">
                 <button
+                  type="button"
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className={`w-full py-2 rounded-lg text-xs font-bold font-mono text-white ${isPlaying ? 'bg-rose-600 hover:bg-rose-500' : 'bg-emerald-600 hover:bg-emerald-500'}`}
+                  className={`w-full py-3.5 rounded-xl text-xs font-bold font-mono text-white transition-all transform hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 shadow-lg ${
+                    isPlaying 
+                      ? "bg-gradient-to-r from-rose-600 to-pink-600 shadow-rose-950/20" 
+                      : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-teal-950/20"
+                  }`}
                 >
-                  {isPlaying ? "⏸ Pause Audio Loops" : "▶ Start Rhythmic Synth Beat"}
+                  {isPlaying ? (
+                    <>
+                      <Pause className="w-4 h-4 animate-bounce" />
+                      <span>Pause Audio Loops</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 ml-0.5" />
+                      <span>Start Concert Audio Loop</span>
+                    </>
+                  )}
                 </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWizardStep(2);
+                    }}
+                    className="py-1.5 border border-slate-800 hover:bg-slate-900 text-slate-300 font-mono text-[10px] rounded-lg text-center cursor-pointer"
+                  >
+                    Adjust joint offsets
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWizardStep(1);
+                      setIsPlaying(false);
+                      setCameraPhotoBuffer(null);
+                      setCompiledPhotoResult(null);
+                    }}
+                    className="py-1.5 border border-slate-800 hover:bg-slate-900 text-slate-300 font-mono text-[10px] rounded-lg text-center cursor-pointer"
+                  >
+                    Reset Pipeline
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-850 font-sans">
                 <button
-                  onClick={() => {
-                    setWizardStep(1);
-                    setCameraPhotoBuffer(null);
-                    setCompiledPhotoResult(null);
-                  }}
-                  className="w-full py-2 border border-slate-800 hover:bg-slate-900 text-slate-300 font-mono text-[10.5px] rounded-lg"
+                  type="button"
+                  onClick={handleSaveActiveRoutine}
+                  disabled={isSaving}
+                  className="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-indigo-305 text-indigo-300 hover:text-white font-mono text-[10.5px] rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  Reset Generation flow
+                  <Server className="w-3.5 h-3.5 animate-pulse" />
+                  <span>{isSaving ? "Saving routine..." : "Commit Routine to Studio DB"}</span>
                 </button>
               </div>
+
+              <p className="text-[10px] text-slate-500 leading-snug italic text-center font-mono">
+                Click standard play on the theatrical visualizer stage to watch the stick elements transition smoothly.
+              </p>
             </div>
           )}
         </div>
@@ -1563,7 +1576,8 @@ export default function App() {
               </div>
 
               {/* Real-time Webcam Motion Capture & AI Choreography compiler dashboard */}
-              <div className="w-full mt-2 p-4 bg-slate-950/80 rounded-2xl border border-slate-800/80 shadow-md text-left transition-all">
+              {wizardStep >= 2 && (
+                <div className="w-full mt-2 p-4 bg-slate-950/80 rounded-2xl border border-slate-800/80 shadow-md text-left transition-all">
                 <div className="flex items-center justify-between mb-3 border-b border-slate-800/60 pb-2">
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${isCompilingAIPoses ? "bg-rose-500 animate-pulse" : isCameraActive ? "bg-emerald-500 animate-ping" : "bg-indigo-500"}`} />
@@ -1732,6 +1746,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
+              )}
 
             </div>
 
