@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------
+    // Global Reusable Security & Validation Primitives
+    // -------------------------------------------------------------
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // -------------------------------------------------------------
+    // User Rules & Validation (Private split/info & details)
+    // -------------------------------------------------------------
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'email'])
+        && data.keys().size() <= 6
+        && data.userId is string
+        && data.userId.size() <= 128
+        && data.userId == request.auth.uid
+        && data.email is string
+        && data.email.size() <= 200
+        && (!data.keys().hasAny(['displayName']) || (data.displayName is string && data.displayName.size() <= 150))
+        && (!data.keys().hasAny(['photoURL']) || (data.photoURL is string && data.photoURL.size() <= 1000))
+        && (!data.keys().hasAny(['createdAt']) || data.createdAt == request.time)
+        && (!data.keys().hasAny(['updatedAt']) || data.updatedAt == request.time);
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isVerified() && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if isVerified() && request.auth.uid == userId && isValidUser(incoming()) 
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']);
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // -------------------------------------------------------------
+    // Saved Sessions Rules & Structural Field Validations
+    // -------------------------------------------------------------
+    
+    function isValidSession(data) {
+      return data.keys().hasAll(['id', 'userId', 'routine', 'savedAt'])
+        && data.keys().size() <= 7
+        && data.id is string
+        && data.id.size() <= 128
+        && data.userId is string
+        && data.userId == request.auth.uid
+        && data.savedAt is string
+        && data.savedAt.size() <= 100
+        && (!data.keys().hasAny(['video']) || data.video is map)
+        && data.routine is map
+        && data.routine.keys().hasAll(['songTitle', 'artist', 'styleDescription', 'difficulty', 'steps'])
+        && data.routine.songTitle is string && data.routine.songTitle.size() <= 200
+        && data.routine.artist is string && data.routine.artist.size() <= 200
+        && data.routine.styleDescription is string && data.routine.styleDescription.size() <= 500
+        && (data.routine.difficulty == 'Beginner' || data.routine.difficulty == 'Intermediate' || data.routine.difficulty == 'Advanced')
+        && data.routine.steps is list 
+        && data.routine.steps.size() >= 4 && data.routine.steps.size() <= 6
+        && (!data.keys().hasAny(['createdAt']) || data.createdAt == request.time)
+        && (!data.keys().hasAny(['updatedAt']) || data.updatedAt == request.time);
+    }
+
+    match /sessions/{sessionId} {
+      allow get: if isVerified() && isValidId(sessionId) && existing().userId == request.auth.uid;
+      
+      // Query Enforcer is mandatory: evaluate resource.data against caller UID directly in allow list check
+      allow list: if isVerified() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isVerified() && isValidId(sessionId) && sessionId == incoming().id && isValidSession(incoming());
+      
+      allow update: if isVerified() && isValidId(sessionId) && sessionId == incoming().id 
+        && existing().userId == request.auth.uid 
+        && isValidSession(incoming()) 
+        && incoming().diff(existing()).affectedKeys().hasOnly(['routine', 'video', 'savedAt', 'updatedAt']);
+        
+      allow delete: if isVerified() && isValidId(sessionId) && existing().userId == request.auth.uid;
+    }
+  }
+}

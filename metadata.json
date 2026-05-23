@@ -1,0 +1,6 @@
+{
+  "name": "YouTube Dance Moves Generator",
+  "description": "Visualize dance choreographies from favorite YouTube music videos using Gemini-generated animated stick figures.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

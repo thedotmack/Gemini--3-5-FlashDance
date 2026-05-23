@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with basic accounts identification.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Matches authenticated User ID."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified user email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User profile display name."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User profile avatar image URL."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile generation server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last profile modifications server timestamp."
+        }
+      },
+      "required": ["userId", "email"]
+    },
+    "Session": {
+      "title": "Session",
+      "description": "A saved Choreography Studio session representing a dynamic choreographic stick figure and music track.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique session and track record ID."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Creator user identification UID."
+        },
+        "video": {
+          "type": "object",
+          "description": "Optional video metadata tracking context."
+        },
+        "routine": {
+          "type": "object",
+          "description": "Complete Dance Routine definition with songTitle, artist, style description, and the sequence array of stick figure positions."
+        },
+        "savedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO execution date-time of save operation."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Modification server timestamp."
+        }
+      },
+      "required": ["id", "userId", "routine", "savedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User accounts metadata profile registry."
+    },
+    "/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "Saved individual and shared studio choreographies."
+    }
+  }
+}
