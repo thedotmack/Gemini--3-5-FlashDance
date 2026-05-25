@@ -416,15 +416,20 @@ export default function App() {
     }
   };
 
-  // Sync synth loop with playback during Step 3 (Perform & Play)
+  // Sync synth loop with playback. The generated "song" plays during Step 3 live practice
+  // AND while the compiled dance-loop video is on the cinema stage, so the loop video and
+  // the beat run together in time (the FFmpeg segments are silent, so the synth is the track).
   useEffect(() => {
-    if (isPlaying && wizardStep === 3) {
+    const shouldPlaySong =
+      (isPlaying && wizardStep === 3) ||
+      (showCompiledCinemaOverlay && !!compiledPhotoResult?.videoUrl);
+    if (shouldPlaySong) {
       startSynthLoop(danceRoutine.tempoBpm || 100);
     } else {
       stopSynthLoop();
     }
     return () => stopSynthLoop();
-  }, [isPlaying, wizardStep, danceRoutine.tempoBpm]);
+  }, [isPlaying, wizardStep, danceRoutine.tempoBpm, showCompiledCinemaOverlay, compiledPhotoResult]);
 
   const handleGenerateSongFromPrompt = async (e: React.FormEvent) => {
     e.preventDefault();

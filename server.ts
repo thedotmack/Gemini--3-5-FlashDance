@@ -4,11 +4,12 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
+import { exec } from "child_process";
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Enable JSON parsing
 app.use(express.json());
@@ -663,7 +664,7 @@ app.post('/api/dance/process-photo', async (req, res) => {
           try {
             const prompt = `Photorealistic dance portrait of the person in the reference, dancing on a studio floor executing the dance move '${step.name}' described as ${step.description}. Neon ambient background with elegant smoke effects, matching client coordinates (head center, limbs outstretched), 4k resolution.`;
             const imageRes = await ai.models.generateImages({
-              model: 'imagen-3.0-generate-002',
+              model: 'imagen-4.0-generate-001',
               prompt: prompt,
               config: {
                 numberOfImages: 1,
@@ -700,8 +701,7 @@ app.post('/api/dance/process-photo', async (req, res) => {
     const segmentFiles: string[] = [];
 
     const execPromise = (cmd: string) => new Promise<string>((resolve, reject) => {
-      const { exec } = require("child_process");
-      exec(cmd, (error: any, stdout: string, stderr: string) => {
+      exec(cmd, { maxBuffer: 1024 * 1024 * 64 }, (error: any, stdout: string, stderr: string) => {
         if (error) reject(error);
         else resolve(stdout);
       });
