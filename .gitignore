@@ -8,3 +8,5 @@ coverage/
 !.env.example
 output/
 cached_routines.json
+.gstack/
+.scratch/

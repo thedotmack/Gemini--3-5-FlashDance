@@ -152,7 +152,7 @@ export default function StickFigure({
         {/* --- BONES RENDERED WITH DYNAMIC SPRING TRANSITIONS --- */}
 
         {/* Shoulders bridge */}
-        <motion.line
+        <motion.line initial={false}
           x1={leftShoulder.x}
           y1={leftShoulder.y}
           x2={rightShoulder.x}
@@ -165,7 +165,7 @@ export default function StickFigure({
         />
 
         {/* Pelvis bridge */}
-        <motion.line
+        <motion.line initial={false}
           x1={leftHip.x}
           y1={leftHip.y}
           x2={rightHip.x}
@@ -178,7 +178,7 @@ export default function StickFigure({
         />
 
         {/* Spine: Neck to Pelvis */}
-        <motion.line
+        <motion.line initial={false}
           x1={neck.x}
           y1={neck.y}
           x2={pelvis.x}
@@ -191,7 +191,7 @@ export default function StickFigure({
         />
 
         {/* Left Arm: Left Shoulder -> Left Elbow -> Left Hand */}
-        <motion.line
+        <motion.line initial={false}
           x1={leftShoulder.x}
           y1={leftShoulder.y}
           x2={leftElbow.x}
@@ -202,7 +202,7 @@ export default function StickFigure({
           animate={{ x1: leftShoulder.x, y1: leftShoulder.y, x2: leftElbow.x, y2: leftElbow.y }}
           transition={transitionSettings}
         />
-        <motion.line
+        <motion.line initial={false}
           x1={leftElbow.x}
           y1={leftElbow.y}
           x2={leftHand.x}
@@ -215,7 +215,7 @@ export default function StickFigure({
         />
 
         {/* Right Arm: Right Shoulder -> Right Elbow -> Right Hand */}
-        <motion.line
+        <motion.line initial={false}
           x1={rightShoulder.x}
           y1={rightShoulder.y}
           x2={rightElbow.x}
@@ -226,7 +226,7 @@ export default function StickFigure({
           animate={{ x1: rightShoulder.x, y1: rightShoulder.y, x2: rightElbow.x, y2: rightElbow.y }}
           transition={transitionSettings}
         />
-        <motion.line
+        <motion.line initial={false}
           x1={rightElbow.x}
           y1={rightElbow.y}
           x2={rightHand.x}
@@ -239,7 +239,7 @@ export default function StickFigure({
         />
 
         {/* Left Leg: Left Hip -> Left Knee -> Left Foot */}
-        <motion.line
+        <motion.line initial={false}
           x1={leftHip.x}
           y1={leftHip.y}
           x2={leftKnee.x}
@@ -250,7 +250,7 @@ export default function StickFigure({
           animate={{ x1: leftHip.x, y1: leftHip.y, x2: leftKnee.x, y2: leftKnee.y }}
           transition={transitionSettings}
         />
-        <motion.line
+        <motion.line initial={false}
           x1={leftKnee.x}
           y1={leftKnee.y}
           x2={leftFoot.x}
@@ -263,7 +263,7 @@ export default function StickFigure({
         />
 
         {/* Right Leg: Right Hip -> Right Knee -> Right Foot */}
-        <motion.line
+        <motion.line initial={false}
           x1={rightHip.x}
           y1={rightHip.y}
           x2={rightKnee.x}
@@ -274,7 +274,7 @@ export default function StickFigure({
           animate={{ x1: rightHip.x, y1: rightHip.y, x2: rightKnee.x, y2: rightKnee.y }}
           transition={transitionSettings}
         />
-        <motion.line
+        <motion.line initial={false}
           x1={rightKnee.x}
           y1={rightKnee.y}
           x2={rightFoot.x}
@@ -292,7 +292,7 @@ export default function StickFigure({
           transition={transitionSettings}
         >
           {/* Head frame */}
-          <motion.circle
+          <motion.circle initial={false}
             cx={head.x}
             cy={head.y}
             r="9.5"
@@ -310,7 +310,7 @@ export default function StickFigure({
         {highlightJoints && (
           <>
             {/* Left Hand joint highlight */}
-            <motion.circle
+            <motion.circle initial={false}
               cx={leftHand.x}
               cy={leftHand.y}
               r="3.5"
@@ -319,7 +319,7 @@ export default function StickFigure({
               transition={transitionSettings}
             />
             {/* Right Hand joint highlight */}
-            <motion.circle
+            <motion.circle initial={false}
               cx={rightHand.x}
               cy={rightHand.y}
               r="3.5"
@@ -328,7 +328,7 @@ export default function StickFigure({
               transition={transitionSettings}
             />
             {/* Left Foot joint highlight */}
-            <motion.circle
+            <motion.circle initial={false}
               cx={leftFoot.x}
               cy={leftFoot.y}
               r="3.5"
@@ -337,7 +337,7 @@ export default function StickFigure({
               transition={transitionSettings}
             />
             {/* Right Foot joint highlight */}
-            <motion.circle
+            <motion.circle initial={false}
               cx={rightFoot.x}
               cy={rightFoot.y}
               r="3.5"
